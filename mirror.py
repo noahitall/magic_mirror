@@ -8,9 +8,8 @@ def save_page(page, url, filename):
     with open(filename, "w", encoding="utf-8") as f:
         f.write(page.content())
 
-def crawl_and_save(base_url, max_pages):
+def crawl_and_save(base_url, max_pages, output_dir="site_mirror"):
     """Crawls and saves multiple pages."""
-    output_dir = "site_mirror"
     os.makedirs(output_dir, exist_ok=True)
 
     with sync_playwright() as p:
@@ -30,12 +29,13 @@ def crawl_and_save(base_url, max_pages):
         browser.close()
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python crawler.py <BASE_URL> <MAX_PAGES>")
+    if len(sys.argv) < 3 or len(sys.argv) > 4:
+        print("Usage: python crawler.py <BASE_URL> <MAX_PAGES> [OUTPUT_DIR]")
         sys.exit(1)
 
     base_url = sys.argv[1]
     max_pages = int(sys.argv[2])
+    output_dir = sys.argv[3] if len(sys.argv) == 4 else "site_mirror"
 
-    crawl_and_save(base_url, max_pages)
+    crawl_and_save(base_url, max_pages, output_dir)
 

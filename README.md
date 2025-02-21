@@ -9,6 +9,7 @@ A Python-based web crawler that creates local mirrors of websites using Playwrig
 - Crawls and saves multiple linked pages
 - Configurable maximum page limit
 - Creates organized local mirror structure
+- Customizable output directory
 
 ## Installation
 
@@ -29,26 +30,31 @@ playwright install chromium
 Run the crawler using the following command:
 
 ```bash
-python mirror.py <BASE_URL> <MAX_PAGES>
+python mirror.py <BASE_URL> <MAX_PAGES> [OUTPUT_DIR]
 ```
 
 Arguments:
 - `BASE_URL`: The starting URL to begin crawling from
 - `MAX_PAGES`: Maximum number of pages to crawl and save
+- `OUTPUT_DIR`: (Optional) Directory to save the mirrored files (defaults to "site_mirror")
 
-Example:
+Examples:
 ```bash
+# Using default output directory (site_mirror)
 python mirror.py https://example.com 10
+
+# Using custom output directory
+python mirror.py https://example.com 10 my_mirror
 ```
 
 This will:
-1. Create a `site_mirror` directory
+1. Create the output directory if it doesn't exist
 2. Save the main page as `index.html`
 3. Crawl up to 10 linked pages and save them as `page_0.html`, `page_1.html`, etc.
 
 ## Output
 
-All mirrored pages are saved in the `site_mirror` directory. The files are saved as:
+All mirrored pages are saved in the specified output directory (defaults to `site_mirror`). The files are saved as:
 - `index.html`: The main page
 - `page_N.html`: Additional crawled pages (where N is the page number)
 
