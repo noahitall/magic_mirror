@@ -7,6 +7,31 @@ import re
 import yaml
 from pathlib import Path
 
+def is_safe_path(base_dir: str, path: str) -> bool:
+    """
+    Check if the path is safe (no directory traversal, relative to base_dir).
+    Returns the safe absolute path or None if unsafe.
+    """
+    try:
+        # Convert to absolute path and resolve any symlinks/relative components
+        base_path = os.path.abspath(base_dir)
+        full_path = os.path.abspath(os.path.join(base_dir, path))
+        
+        # Check if the resolved path is under the base directory
+        return os.path.commonpath([base_path, full_path]) == base_path
+    except Exception:
+        return False
+
+def sanitize_path(base_dir: str, path: str, default: str) -> str:
+    """
+    Sanitize a path to prevent directory traversal.
+    Returns the sanitized path or the default if the path is unsafe.
+    """
+    if not path or not is_safe_path(base_dir, path):
+        print(f"Warning: Invalid or unsafe path '{path}'. Using '{default}' instead.")
+        return default
+    return path
+
 def load_config(config_path: str = "config.yaml") -> Dict:
     """Load ranking configuration from YAML file."""
     default_config = {
@@ -27,8 +52,12 @@ def load_config(config_path: str = "config.yaml") -> Dict:
         }
     }
     
+    # Sanitize config path
+    current_dir = os.getcwd()
+    safe_config_path = sanitize_path(current_dir, config_path, "config.yaml")
+    
     try:
-        with open(config_path, 'r') as f:
+        with open(safe_config_path, 'r') as f:
             config = yaml.safe_load(f)
         return config if config else default_config
     except (FileNotFoundError, yaml.YAMLError) as e:
@@ -130,9 +159,19 @@ def get_ranked_links(page, base_url: str, config: Dict) -> List[Tuple[str, float
     ranked_links.sort(key=lambda x: x[1], reverse=True)
     return ranked_links
 
-def save_page(page, url: str, filename: str):
+def save_page(page, url: str, filename: str) -> bool:
     """Saves the rendered HTML content of a page."""
     try:
+        # Ensure the directory exists and is safe
+        output_dir = os.path.dirname(filename)
+        if output_dir and not is_safe_path(os.getcwd(), output_dir):
+            print(f"Error: Unsafe output path '{filename}'")
+            return False
+            
+        # Create directory if it doesn't exist
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+            
         page.goto(url, wait_until="networkidle")
         with open(filename, "w", encoding="utf-8") as f:
             f.write(page.content())
@@ -143,7 +182,15 @@ def save_page(page, url: str, filename: str):
 
 def crawl_and_save(base_url: str, max_pages: int, output_dir: str = "site_mirror", config_path: str = "config.yaml"):
     """Crawls and saves multiple pages."""
-    os.makedirs(output_dir, exist_ok=True)
+    # Sanitize output directory path
+    current_dir = os.getcwd()
+    safe_output_dir = sanitize_path(current_dir, output_dir, "site_mirror")
+    
+    try:
+        os.makedirs(safe_output_dir, exist_ok=True)
+    except Exception as e:
+        print(f"Error creating output directory: {str(e)}")
+        return
     
     # Load ranking configuration
     config = load_config(config_path)
@@ -157,7 +204,7 @@ def crawl_and_save(base_url: str, max_pages: int, output_dir: str = "site_mirror
         page.set_viewport_size({"width": 1280, "height": 800})
         
         # Save the main page
-        if not save_page(page, base_url, os.path.join(output_dir, "index.html")):
+        if not save_page(page, base_url, os.path.join(safe_output_dir, "index.html")):
             print("Failed to save main page. Exiting.")
             browser.close()
             return
@@ -175,7 +222,7 @@ def crawl_and_save(base_url: str, max_pages: int, output_dir: str = "site_mirror
                 break
                 
             print(f"\nCrawling {url} (relevance score: {score:.2f})")
-            if save_page(page, url, os.path.join(output_dir, f"page_{i}.html")):
+            if save_page(page, url, os.path.join(safe_output_dir, f"page_{i}.html")):
                 pages_saved += 1
         
         browser.close()
@@ -190,6 +237,15 @@ if __name__ == "__main__":
     max_pages = int(sys.argv[2])
     output_dir = sys.argv[3] if len(sys.argv) > 3 else "site_mirror"
     config_path = sys.argv[4] if len(sys.argv) > 4 else "config.yaml"
+
+    # Validate max_pages
+    try:
+        max_pages = int(max_pages)
+        if max_pages < 1:
+            raise ValueError("MAX_PAGES must be a positive integer")
+    except ValueError as e:
+        print(f"Error: {str(e)}")
+        sys.exit(1)
 
     crawl_and_save(base_url, max_pages, output_dir, config_path)
 
