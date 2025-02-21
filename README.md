@@ -21,7 +21,10 @@ cd magic_mirror
 
 2. Install the required dependencies:
 ```bash
-pip install playwright
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Install Playwright browser
 playwright install chromium
 ```
 
