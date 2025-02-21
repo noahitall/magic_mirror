@@ -1,0 +1,35 @@
+# Link ranking configuration
+
+# Domain relevance
+domain:
+  internal_link_bonus: 3.0
+
+# Content relevance
+content:
+  title_word_match_weight: 0.5
+
+# Position weights
+position:
+  vertical_position_weight: 2.0
+
+# Context weights
+context:
+  content_area_bonus: 2.0
+  navigation_area_penalty: -1.0
+  content_indicators:
+    - article
+    - main
+    - section
+    - div
+  navigation_indicators:
+    - nav
+    - footer
+    - header
+    - sidebar
+
+# Visual prominence
+prominence:
+  visible_link_bonus: 1.0
+  bold_text_bonus: 0.5
+  large_font_bonus: 0.5
+  large_font_threshold: 16  # pixels 
